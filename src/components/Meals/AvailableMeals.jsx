@@ -1,10 +1,34 @@
-import DUMMY_MEALS from '../../Mock/dummyMeals'
 import Card from '../UI/Card'
 import classes from './AvailableMeals.module.css'
 import MealItem from './MealItem/MealItem'
+import { useEffect, useState } from 'react'
 
 export default function AvailableMeals() {
-  const dummyList = DUMMY_MEALS.map(meal => (
+  const [meals, setMeals] = useState([])
+
+  useEffect(() => {
+    const fetchMeals = async () => {
+      const response = await fetch(
+        'https://yummyfood-delivery-default-rtdb.firebaseio.com/meals.json'
+      )
+      const data = await response.json()
+
+      let loadedMeals = []
+
+      for (const key in data) {
+        loadedMeals.push({
+          id: key,
+          name: data[key].name,
+          description: data[key].description,
+          price: data[key].price
+        })
+      }
+      setMeals(loadedMeals)
+    }
+    fetchMeals()
+  }, [])
+
+  const mealsList = meals.map(meal => (
     <MealItem
       key={meal.id}
       id={meal.id}
@@ -17,7 +41,7 @@ export default function AvailableMeals() {
   return (
     <section className={classes.meals}>
       <Card>
-        <ul>{dummyList}</ul>
+        <ul>{mealsList}</ul>
       </Card>
     </section>
   )
