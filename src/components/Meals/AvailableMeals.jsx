@@ -5,12 +5,17 @@ import { useEffect, useState } from 'react'
 
 export default function AvailableMeals() {
   const [meals, setMeals] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState()
 
   useEffect(() => {
     const fetchMeals = async () => {
       const response = await fetch(
         'https://yummyfood-delivery-default-rtdb.firebaseio.com/meals.json'
       )
+      if (!response.ok) {
+        throw new Error('Something went wrong!')
+      }
       const data = await response.json()
 
       let loadedMeals = []
@@ -24,8 +29,13 @@ export default function AvailableMeals() {
         })
       }
       setMeals(loadedMeals)
+      setIsLoading(false)
     }
-    fetchMeals()
+
+    fetchMeals().catch(error => {
+      setIsLoading(false)
+      setError(error.message)
+    })
   }, [])
 
   const mealsList = meals.map(meal => (
@@ -41,6 +51,8 @@ export default function AvailableMeals() {
   return (
     <section className={classes.meals}>
       <Card>
+        {isLoading && <p className={classes.mealsLoading}>Loading...</p>}
+        {error && <p className={classes.mealsError}>{error}</p>}
         <ul>{mealsList}</ul>
       </Card>
     </section>
