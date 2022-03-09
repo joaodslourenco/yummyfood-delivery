@@ -7,6 +7,9 @@ import Checkout from './Checkout'
 
 export default function Cart(props) {
   const [isCheckout, setIsCheckout] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [didSubmit, setDidSubmit] = useState(false)
+  const [error, setError] = useState(null)
   const cartCtx = useContext(CartContext)
 
   const totalAmount = `$${cartCtx.totalAmount.toFixed(2)}`
@@ -39,15 +42,27 @@ export default function Cart(props) {
     setIsCheckout(true)
   }
 
-  const submitOrderHandler = userData => {
-    fetch(
-      'https://yummyfood-delivery-default-rtdb.firebaseio.com/orders.json',
-      {
-        method: 'POST',
-        body: JSON.stringify({ user: userData, orderedItem: cartCtx.items })
+  const submitOrderHandler = async userData => {
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(
+        'https://yummyfood-delivery-default-rtdb.firebaseio.com/orders.json',
+        {
+          method: 'POST',
+          body: JSON.stringify({ user: userData, orderedItem: cartCtx.items })
+        }
+      )
+      if (!response.ok) {
+        throw new Error(
+          'There was an error while submitting your order. Please try again.'
+        )
       }
-    )
-    return
+    } catch (error) {
+      setError(error.message)
+    }
+    setIsSubmitting(false)
+    setDidSubmit(true)
+    cartCtx.clearCart()
   }
 
   const modalActions = (
@@ -63,8 +78,10 @@ export default function Cart(props) {
     </div>
   )
 
-  return (
-    <Modal onClose={props.onClose}>
+  const isSubmittingModalContent = <p>Sending order data...</p>
+
+  const cartModalContent = (
+    <>
       {cartItems}
       <div className={classes.total}>
         <span>Total Amount</span>
@@ -73,7 +90,18 @@ export default function Cart(props) {
       {isCheckout && (
         <Checkout onConfirm={submitOrderHandler} onCancel={props.onClose} />
       )}
+      {error && <p>{error.message}</p>}
       {!isCheckout && modalActions}
+    </>
+  )
+
+  const didSubmitModalContent = <p>Your order has been sent!</p>
+
+  return (
+    <Modal onClose={props.onClose}>
+      {!isSubmitting && !didSubmit && cartModalContent}
+      {isSubmitting && isSubmittingModalContent}
+      {!isSubmitting && didSubmit && didSubmitModalContent}
     </Modal>
   )
 }
